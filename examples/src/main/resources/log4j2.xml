@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <Console name="app" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight{%-5p} [%t] %blue{%c{4}} - %m%n"/>
+        </Console>
+        <RollingRandomAccessFile name="app-file"
+                                 fileName="/tmp/test/app.log"
+                                 filePattern="/tmp/test/app.log.%d{yyyy-MM-dd}-%i.gz">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p [%t] %c{4} - %m%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="250MB"/>
+            </Policies>
+            <DefaultRolloverStrategy>
+                <Delete basePath="/tmp/test/">
+                    <IfFileName glob="app.log.*.gz">
+                        <IfAny>
+                            <IfAccumulatedFileCount exceeds="5"/>
+                            <IfAccumulatedFileSize exceeds="1GB"/>
+                        </IfAny>
+                    </IfFileName>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingRandomAccessFile>
+    </Appenders>
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="app"/>
+            <AppenderRef ref="app-file"/>
+        </Root>
+    </Loggers>
+</Configuration>
