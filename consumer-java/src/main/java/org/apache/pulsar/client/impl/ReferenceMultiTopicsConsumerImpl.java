@@ -50,6 +50,10 @@ import java.util.stream.IntStream;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
+/**
+ * Fork of {@link MultiTopicsConsumerImpl} from commit: b40e6eb7712821a8456880ca58de673bbc4bac36
+ * @param <T>
+ */
 class ReferenceMultiTopicsConsumerImpl<T> extends ConsumerBase<T> {
 
     public static final String DUMMY_TOPIC_NAME_PREFIX = "MultiTopicsConsumer-";
