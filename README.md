@@ -26,8 +26,18 @@ Snapshots of PWC are published using version as `major.minor-SNAPSHOT`. For exam
 
 ### Artifactory and Releases
 
-Maven/Gradle releases are published to [clojars artifactory here](https://clojars.org/com.flipkart/pulsar-weighted-consumer).  
-You can also find more information about [changelog and release here](https://github.com/flipkart-incubator/pulsar-weighted-consumer/releases).
+Maven/Gradle releases are published to [clojars artifactory here](https://clojars.org/com.flipkart/pulsar-weighted-consumer). You need to have clojars repository added in your build file. Example for pom:
+```xml
+<repositories>
+    <repository>
+        <id>clojars</id>
+        <name>Clojars repository</name>
+        <url>https://clojars.org/repo</url>
+    </repository>
+</repositories>
+```
+
+You can also find more information about [changelog and releases here](https://github.com/flipkart-incubator/pulsar-weighted-consumer/releases).
 
 TODO: javadocs link
 
