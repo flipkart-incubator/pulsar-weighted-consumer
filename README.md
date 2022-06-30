@@ -45,7 +45,14 @@ TODO: javadocs link
 
 ### Concepts
 
-Pulsar weighted consumer modifies the original multi topic consumer and introduces unequal consumptions of messages across different topics. Multi topic consumer of Pulsar works by creating multiple topic specific consumers and draining messages from each of them to a shared queue. This shared queue in turn is drained by the user using `receive` method variants. PWC introduces few changes like keeping count of messages in the shared queue at a topic granularity and assigning weighted thresholds to the topics. Note that here a threshold or count is cumulatively applied to all partitions of a topic. When the message count breaches the topic's threshold, fetch of messages from its internal sub-consumer is paused. To ensure adherence to weights, it remains paused unless all the messages from the shared queue have not been drained (this in configurable though).
+Pulsar weighted consumer modifies the original multi topic consumer and introduces unequal consumptions of messages across different topics. Multi topic consumer of Pulsar works by creating multiple topic specific consumers and draining messages from each of them to a shared queue. This shared queue in turn is drained by the user using `receive` method variants. PWC introduces few changes like keeping count of messages in the shared queue at a topic granularity and assigning weighted thresholds to the topics. Note that here a threshold or count is cumulatively applied to all partitions of a topic. When the message count breaches the topic's threshold, fetch of messages from its internal sub-consumer is paused. To ensure adherence to weights, it remains paused unless all the messages from the shared queue have not been drained (this is configurable though).
+
+#### Bounds and Weights
+
+The thresholds are determined by `minBound` which is associated with the lowest weighted topic and `maxBound` associate with the highest weighted topic. The thresholds for rest of the topics are calculated using the `distributionStrategy` specified. Consider an example of `minBound=100, maxBound=1000, distributionStrategy=LINEAR` and 5 topics associated with weights 1 to 5, respectively. Here the thresholds for the topics get computed as: `[100, 325, 550, 775, 1000]` which is essentially a linear increment of 225 messages between consecutive weights. Users can tweak minBound, maxBound, distributionStrategy and weights to arrive at the relative thresholds for messages of different topics in the shared queue. More the messages of a given topic in the shared queue, higher the consumption throughput for that topic (not true everytime though, refer to force priority consumption section). 
+
+> **NOTE**   
+> If w_max and w_min are the highest and lowest weights that you assign to the topics and if `w_max - w_min < 10`, it is recommended to not change the minBound and maxBound defaults.
 
 #### Bursting
 
