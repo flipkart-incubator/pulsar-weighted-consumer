@@ -6,7 +6,7 @@
 
     <groupId>com.flipkart</groupId>
     <artifactId>pulsar-weighted-consumer</artifactId>
-    <version>2.7-SNAPSHOT</version>
+    <version>2.7-1</version>
 
     <properties>
         <java.version>8</java.version>
