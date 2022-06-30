@@ -6,6 +6,7 @@ This repository provides implementation of a pulsar consumer that can do priorit
 
 ## Adding PWC to your build
 
+### Dependency and Versioning
 [Pulsar java client](https://pulsar.apache.org/docs/client-libraries-java/) should be added as a dependency in the maven project where you intend to import PWC. PWC builds are published follows a versioning scheme aligned with Pulsar: `major.minor-X`, where major.minor should be the same as the included pulsar client. Since pulsar clients are fully compatible across versions, it should be possible to use a different pulsar-client as compared to PWC, but this is neither tested nor recommended.
 
 A good strategy would be to look at the PWC builds already available and align your pulsar-client to one of those versions.
@@ -19,9 +20,14 @@ A good strategy would be to look at the PWC builds already available and align y
 
 If you have a hard requirement of using a specific version of pulsar-client, but PWC has not been published for that pulsar verion, feel free to open a ticket.
 
-## Snapshots and Documentation
+### Snapshots
 
 Snapshots of PWC are published using version as `major.minor-SNAPSHOT`. For example: `com.flipkart:pulsar-weighted-consumer:2.7-SNAPSHOT`
+
+### Artifactory and Releases
+
+Maven/Gradle releases are published to [clojars artifactory here](https://clojars.org/com.flipkart/pulsar-weighted-consumer).  
+You can also find more information about [changelog and release here](https://github.com/flipkart-incubator/pulsar-weighted-consumer/releases).
 
 TODO: javadocs link
 
