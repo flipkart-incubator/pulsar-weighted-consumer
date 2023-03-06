@@ -28,9 +28,10 @@ import org.apache.pulsar.client.impl.conf.ConsumerConfigurationData;
 import org.apache.pulsar.client.impl.transaction.TransactionImpl;
 import org.apache.pulsar.client.util.ConsumerName;
 import org.apache.pulsar.client.util.ExecutorProvider;
-import org.apache.pulsar.common.api.proto.PulsarApi.CommandAck.AckType;
+import org.apache.pulsar.common.api.proto.CommandAck.AckType;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.common.partition.PartitionedTopicMetadata;
+import org.apache.pulsar.common.util.CompletableFutureCancellationHandler;
 import org.apache.pulsar.common.util.FutureUtil;
 import org.apache.pulsar.shade.io.netty.util.Timeout;
 import org.apache.pulsar.shade.io.netty.util.TimerTask;
@@ -44,6 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -126,9 +128,9 @@ class ReferenceMultiTopicsConsumerImpl<T> extends ConsumerBase<T> {
 
         if (conf.getAckTimeoutMillis() != 0) {
             if (conf.getTickDurationMillis() > 0) {
-                this.unAckedMessageTracker = new UnAckedTopicMessageTracker(client, this, conf.getAckTimeoutMillis(), conf.getTickDurationMillis());
+                this.unAckedMessageTracker = new UnAckedTopicMessageTracker(client, this, conf);
             } else {
-                this.unAckedMessageTracker = new UnAckedTopicMessageTracker(client, this, conf.getAckTimeoutMillis());
+                this.unAckedMessageTracker = new UnAckedTopicMessageTracker(client, this, conf);
             }
         } else {
             this.unAckedMessageTracker = UnAckedMessageTracker.UNACKED_MESSAGE_TRACKER_DISABLED;
@@ -483,7 +485,7 @@ class ReferenceMultiTopicsConsumerImpl<T> extends ConsumerBase<T> {
 
     @Override
     protected CompletableFuture<Void> doReconsumeLater(Message<?> message, AckType ackType,
-                                                       Map<String, Long> properties,
+                                                       Map<String, String> properties,
                                                        long delayTime,
                                                        TimeUnit unit) {
         MessageId messageId = message.getMessageId();
@@ -621,7 +623,7 @@ class ReferenceMultiTopicsConsumerImpl<T> extends ConsumerBase<T> {
         try {
             consumers.values().stream().forEach(consumer -> {
                 consumer.redeliverUnacknowledgedMessages();
-                consumer.unAckedChunckedMessageIdSequenceMap.clear();
+                consumer.unAckedChunkedMessageIdSequenceMap.clear();
             });
             incomingMessages.clear();
             resetIncomingMessageSize();
@@ -677,6 +679,27 @@ class ReferenceMultiTopicsConsumerImpl<T> extends ConsumerBase<T> {
         } catch (Exception e) {
             throw PulsarClientException.unwrap(e);
         }
+    }
+
+    @Override
+    public void seek(Function<String, Object> function) throws PulsarClientException {
+        try {
+            this.seekAsync(function).get();
+        } catch (Exception var3) {
+            throw PulsarClientException.unwrap(var3);
+        }
+    }
+
+    @Override
+    public CompletableFuture<Void> seekAsync(Function<String, Object> function) {
+        List<CompletableFuture<Void>> futures = new ArrayList(this.consumers.size());
+        this.consumers.values().forEach((consumer) -> {
+            futures.add(consumer.seekAsync(function));
+        });
+        this.unAckedMessageTracker.clear();
+        this.incomingMessages.clear();
+        this.resetIncomingMessageSize();
+        return FutureUtil.waitForAll(futures);
     }
 
     @Override
