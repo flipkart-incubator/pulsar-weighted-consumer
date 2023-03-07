@@ -805,21 +805,13 @@ public class WeightedMultiTopicsConsumerImpl<T> extends ConsumerBase<T> {
 
     @Override
     public CompletableFuture<Void> seekAsync(Function<String, Object> function) {
-        if(function==null) {
-            return FutureUtil.failedFuture(new PulsarClientException("Function must be set"));
-        }
-        Object seekPosition = function.apply(this.topic);
-        CompletableFuture<Void> seekFuture;
-
-        if (seekPosition == null) {
-            seekFuture=CompletableFuture.completedFuture(null);
-        }
-        if (seekPosition instanceof MessageId) {
-            seekFuture= this.seekAsync((MessageId) seekPosition);
-        } else{
-            seekFuture = seekPosition.getClass().getTypeName().equals(Long.class.getTypeName()) ? this.seekAsync((Long) seekPosition) : FutureUtil.failedFuture(new PulsarClientException("Only support seek by messageId or timestamp"));
-        }
-        return seekFuture;
+        List<CompletableFuture<Void>> futures = new ArrayList(this.consumers.size());
+        this.consumers.values().forEach((consumer) -> {
+            futures.add(consumer.seekAsync(function));
+        });
+        this.unAckedMessageTracker.clear();
+        this.resetIncomingMessageSize();
+        return FutureUtil.waitForAll(futures);
     }
 
 
