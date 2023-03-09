@@ -15,13 +15,13 @@
 
 package org.apache.pulsar.client.impl;
 
-import com.google.common.base.Preconditions;
 import org.apache.pulsar.client.api.*;
 import org.apache.pulsar.client.impl.conf.ConsumerConfigurationData;
 import org.apache.pulsar.client.impl.weight.WeightedConsumerConfiguration;
 import org.apache.pulsar.client.util.RetryMessageUtil;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.common.util.FutureUtil;
+import org.apache.pulsar.shade.com.google.common.base.Preconditions;
 import org.apache.pulsar.shade.org.apache.commons.lang3.StringUtils;
 
 import java.util.List;

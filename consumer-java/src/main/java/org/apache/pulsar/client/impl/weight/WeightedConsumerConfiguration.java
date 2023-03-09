@@ -15,11 +15,12 @@
 
 package org.apache.pulsar.client.impl.weight;
 
-import com.google.common.base.Preconditions;
+
 import org.apache.pulsar.client.api.ConsumerBuilder;
 import org.apache.pulsar.client.impl.WeightedConsumerBuilder;
 import org.apache.pulsar.client.impl.conf.ConsumerConfigurationData;
 import org.apache.pulsar.common.naming.TopicName;
+import org.apache.pulsar.shade.com.google.common.base.Preconditions;
 
 import java.util.Collections;
 import java.util.HashMap;

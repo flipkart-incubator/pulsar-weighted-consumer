@@ -14,10 +14,6 @@
  */
 package org.apache.pulsar.client.impl;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
-import com.google.common.collect.Lists;
 import org.apache.pulsar.client.api.*;
 import org.apache.pulsar.client.api.PulsarClientException.NotSupportedException;
 import org.apache.pulsar.client.impl.conf.ConsumerConfigurationData;
@@ -34,6 +30,9 @@ import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.common.partition.PartitionedTopicMetadata;
 import org.apache.pulsar.common.util.CompletableFutureCancellationHandler;
 import org.apache.pulsar.common.util.FutureUtil;
+import org.apache.pulsar.shade.com.google.common.annotations.VisibleForTesting;
+import org.apache.pulsar.shade.com.google.common.collect.ImmutableMap;
+import org.apache.pulsar.shade.com.google.common.collect.Lists;
 import org.apache.pulsar.shade.io.netty.util.Timeout;
 import org.apache.pulsar.shade.io.netty.util.TimerTask;
 import org.apache.pulsar.shade.org.apache.commons.lang3.tuple.Pair;
@@ -52,8 +51,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
+import static org.apache.pulsar.shade.com.google.common.base.Preconditions.checkArgument;
+import static org.apache.pulsar.shade.com.google.common.base.Preconditions.checkState;
 import static org.apache.pulsar.shade.org.apache.commons.lang3.StringUtils.isBlank;
 
 public class WeightedMultiTopicsConsumerImpl<T> extends ConsumerBase<T> {
@@ -1125,6 +1124,12 @@ public class WeightedMultiTopicsConsumerImpl<T> extends ConsumerBase<T> {
                     return null;
                 });
     }
+    public int getRQSize(String topicName) {
+        int receiverQueueSize = throttleReceiverQueue
+                ? topicThresholdDistribution.getValue(topicName)
+                : topicThresholdDistribution.getMaxValue();
+        return receiverQueueSize;
+    }
 
     private int getReceiverQueueSize(String topicName) {
         int receiverQueueSize = throttleReceiverQueue
@@ -1429,7 +1434,7 @@ public class WeightedMultiTopicsConsumerImpl<T> extends ConsumerBase<T> {
         CompletableFuture
                 .allOf(messageIdFutures.entrySet().stream().map(Map.Entry::getValue).toArray(CompletableFuture<?>[]::new))
                 .whenComplete((ignore, ex) -> {
-                    Builder<String, MessageId> builder = ImmutableMap.builder();
+                    ImmutableMap.Builder<String, MessageId> builder = ImmutableMap.builder();
                     messageIdFutures.forEach((key, future) -> {
                         MessageId messageId;
                         try {
