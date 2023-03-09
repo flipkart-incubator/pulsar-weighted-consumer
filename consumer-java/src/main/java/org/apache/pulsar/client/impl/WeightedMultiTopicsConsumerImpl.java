@@ -1124,12 +1124,6 @@ public class WeightedMultiTopicsConsumerImpl<T> extends ConsumerBase<T> {
                     return null;
                 });
     }
-    public int getRQSize(String topicName) {
-        int receiverQueueSize = throttleReceiverQueue
-                ? topicThresholdDistribution.getValue(topicName)
-                : topicThresholdDistribution.getMaxValue();
-        return receiverQueueSize;
-    }
 
     private int getReceiverQueueSize(String topicName) {
         int receiverQueueSize = throttleReceiverQueue
