@@ -115,7 +115,7 @@ public class WeightedMultiTopicsConsumerImpl<T> extends ConsumerBase<T> {
                                     ConsumerInterceptors<T> interceptors, boolean createTopicIfDoesNotExist, MessageId startMessageId,
                                     long startMessageRollbackDurationInSec) {
         super(client, singleTopic, conf, Math.max(2, conf.getReceiverQueueSize()), executorProvider, subscribeFuture,
-                schema, interceptors);// Why at max 2 is hardcoded here
+                schema, interceptors);
 
         checkArgument(conf.getReceiverQueueSize() > 0,
                 "Receiver queue size needs to be greater than 0 for Topics Consumer");
