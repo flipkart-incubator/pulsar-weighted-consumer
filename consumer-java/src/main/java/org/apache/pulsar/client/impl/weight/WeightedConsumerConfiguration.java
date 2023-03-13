@@ -17,7 +17,6 @@ package org.apache.pulsar.client.impl.weight;
 
 
 import org.apache.pulsar.client.api.ConsumerBuilder;
-import org.apache.pulsar.client.impl.WeightedConsumerBuilder;
 import org.apache.pulsar.client.impl.conf.ConsumerConfigurationData;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.shade.com.google.common.base.Preconditions;
@@ -123,6 +122,12 @@ public class WeightedConsumerConfiguration {
 
     public int getMaxWeightAllowed() {
         return maxWeightAllowed;
+    }
+
+    public String getSubscriptionName(ConsumerConfigurationData conf){
+        String subscriptionName=conf.getSubscriptionName();
+        subscriptionName.replace("/", "_");
+        return subscriptionName;
     }
 
     @Override
