@@ -124,12 +124,6 @@ public class WeightedConsumerConfiguration {
         return maxWeightAllowed;
     }
 
-    public String getSubscriptionName(ConsumerConfigurationData conf){
-        String subscriptionName=conf.getSubscriptionName();
-        subscriptionName.replace("/", "_");
-        return subscriptionName;
-    }
-
     @Override
     public String toString() {
         StringBuilder str = new StringBuilder();

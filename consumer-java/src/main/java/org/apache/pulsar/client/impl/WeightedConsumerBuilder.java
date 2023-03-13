@@ -110,6 +110,11 @@ public class WeightedConsumerBuilder<T> extends ConsumerBuilderImpl<T> {
         }
         return this;
     }
+    public String getSubscriptionName(ConsumerConfigurationData conf){
+        String subscriptionName=conf.getSubscriptionName();
+        subscriptionName.replace("/", "__");
+        return subscriptionName;
+    }
 
 
     /**
@@ -141,7 +146,7 @@ public class WeightedConsumerBuilder<T> extends ConsumerBuilderImpl<T> {
         }
         if(conf.isRetryEnable() && conf.getTopicNames().size() > 0 ) {
             TopicName topicFirst = TopicName.get(conf.getTopicNames().iterator().next());
-            String subscriptionName=weightConf.getSubscriptionName(conf);
+            String subscriptionName=getSubscriptionName(conf);
             String retryLetterTopic = topicFirst.getNamespace() + "/" + subscriptionName + RetryMessageUtil.RETRY_GROUP_TOPIC_SUFFIX;
             String deadLetterTopic = topicFirst.getNamespace() + "/" + subscriptionName + RetryMessageUtil.DLQ_GROUP_TOPIC_SUFFIX;
             if(conf.getDeadLetterPolicy() == null) {
