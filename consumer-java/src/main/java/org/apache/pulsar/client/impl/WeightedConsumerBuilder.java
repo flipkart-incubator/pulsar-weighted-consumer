@@ -110,7 +110,7 @@ public class WeightedConsumerBuilder<T> extends ConsumerBuilderImpl<T> {
         }
         return this;
     }
-    public String getSubscriptionName(ConsumerConfigurationData conf){
+    private String getSubscriptionName(ConsumerConfigurationData conf){
         String subscriptionName=conf.getSubscriptionName();
         subscriptionName.replace("/", "__");
         return subscriptionName;
