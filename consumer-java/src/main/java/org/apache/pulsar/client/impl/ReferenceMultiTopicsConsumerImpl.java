@@ -18,20 +18,20 @@
  */
 package org.apache.pulsar.client.impl;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
-import com.google.common.collect.Lists;
 import org.apache.pulsar.client.api.*;
 import org.apache.pulsar.client.api.PulsarClientException.NotSupportedException;
 import org.apache.pulsar.client.impl.conf.ConsumerConfigurationData;
 import org.apache.pulsar.client.impl.transaction.TransactionImpl;
 import org.apache.pulsar.client.util.ConsumerName;
 import org.apache.pulsar.client.util.ExecutorProvider;
-import org.apache.pulsar.common.api.proto.PulsarApi.CommandAck.AckType;
+import org.apache.pulsar.common.api.proto.CommandAck.AckType;
 import org.apache.pulsar.common.naming.TopicName;
 import org.apache.pulsar.common.partition.PartitionedTopicMetadata;
+import org.apache.pulsar.common.util.CompletableFutureCancellationHandler;
 import org.apache.pulsar.common.util.FutureUtil;
+import org.apache.pulsar.shade.com.google.common.annotations.VisibleForTesting;
+import org.apache.pulsar.shade.com.google.common.collect.ImmutableMap;
+import org.apache.pulsar.shade.com.google.common.collect.Lists;
 import org.apache.pulsar.shade.io.netty.util.Timeout;
 import org.apache.pulsar.shade.io.netty.util.TimerTask;
 import org.apache.pulsar.shade.org.apache.commons.lang3.tuple.Pair;
@@ -44,11 +44,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
+import static org.apache.pulsar.shade.com.google.common.base.Preconditions.checkArgument;
+import static org.apache.pulsar.shade.com.google.common.base.Preconditions.checkState;
 
 /**
  * Fork of {@link MultiTopicsConsumerImpl} from commit: b40e6eb7712821a8456880ca58de673bbc4bac36
@@ -126,9 +127,9 @@ class ReferenceMultiTopicsConsumerImpl<T> extends ConsumerBase<T> {
 
         if (conf.getAckTimeoutMillis() != 0) {
             if (conf.getTickDurationMillis() > 0) {
-                this.unAckedMessageTracker = new UnAckedTopicMessageTracker(client, this, conf.getAckTimeoutMillis(), conf.getTickDurationMillis());
+                this.unAckedMessageTracker = new UnAckedTopicMessageTracker(client, this, conf);
             } else {
-                this.unAckedMessageTracker = new UnAckedTopicMessageTracker(client, this, conf.getAckTimeoutMillis());
+                this.unAckedMessageTracker = new UnAckedTopicMessageTracker(client, this, conf);
             }
         } else {
             this.unAckedMessageTracker = UnAckedMessageTracker.UNACKED_MESSAGE_TRACKER_DISABLED;
@@ -483,7 +484,7 @@ class ReferenceMultiTopicsConsumerImpl<T> extends ConsumerBase<T> {
 
     @Override
     protected CompletableFuture<Void> doReconsumeLater(Message<?> message, AckType ackType,
-                                                       Map<String, Long> properties,
+                                                       Map<String, String> properties,
                                                        long delayTime,
                                                        TimeUnit unit) {
         MessageId messageId = message.getMessageId();
@@ -621,7 +622,7 @@ class ReferenceMultiTopicsConsumerImpl<T> extends ConsumerBase<T> {
         try {
             consumers.values().stream().forEach(consumer -> {
                 consumer.redeliverUnacknowledgedMessages();
-                consumer.unAckedChunckedMessageIdSequenceMap.clear();
+                consumer.unAckedChunkedMessageIdSequenceMap.clear();
             });
             incomingMessages.clear();
             resetIncomingMessageSize();
@@ -677,6 +678,27 @@ class ReferenceMultiTopicsConsumerImpl<T> extends ConsumerBase<T> {
         } catch (Exception e) {
             throw PulsarClientException.unwrap(e);
         }
+    }
+
+    @Override
+    public void seek(Function<String, Object> function) throws PulsarClientException {
+        try {
+            this.seekAsync(function).get();
+        } catch (Exception var3) {
+            throw PulsarClientException.unwrap(var3);
+        }
+    }
+
+    @Override
+    public CompletableFuture<Void> seekAsync(Function<String, Object> function) {
+        List<CompletableFuture<Void>> futures = new ArrayList(this.consumers.size());
+        this.consumers.values().forEach((consumer) -> {
+            futures.add(consumer.seekAsync(function));
+        });
+        this.unAckedMessageTracker.clear();
+        this.incomingMessages.clear();
+        this.resetIncomingMessageSize();
+        return FutureUtil.waitForAll(futures);
     }
 
     @Override
@@ -1269,7 +1291,7 @@ class ReferenceMultiTopicsConsumerImpl<T> extends ConsumerBase<T> {
         CompletableFuture
                 .allOf(messageIdFutures.entrySet().stream().map(Map.Entry::getValue).toArray(CompletableFuture<?>[]::new))
                 .whenComplete((ignore, ex) -> {
-                    Builder<String, MessageId> builder = ImmutableMap.builder();
+                    ImmutableMap.Builder<String, MessageId> builder = ImmutableMap.builder();
                     messageIdFutures.forEach((key, future) -> {
                         MessageId messageId;
                         try {

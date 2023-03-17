@@ -15,7 +15,6 @@
 
 package org.apache.pulsar.client.impl;
 
-import com.google.common.base.Preconditions;
 import org.apache.pulsar.client.api.*;
 import org.apache.pulsar.client.impl.conf.ConsumerConfigurationData;
 import org.apache.pulsar.client.impl.weight.WeightedConsumerConfiguration;
@@ -27,6 +26,8 @@ import org.apache.pulsar.shade.org.apache.commons.lang3.StringUtils;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+
+import static org.apache.pulsar.shade.com.google.common.base.Preconditions.checkArgument;
 
 public class WeightedConsumerBuilder<T> extends ConsumerBuilderImpl<T> {
     private WeightedConsumerConfiguration weightConf;
@@ -74,7 +75,7 @@ public class WeightedConsumerBuilder<T> extends ConsumerBuilderImpl<T> {
 
     public WeightedConsumerBuilder<T> retryTopicWeight(Integer weight) {
         if (weight != null) {
-            Preconditions.checkArgument(weight >= 1 && weight <= weightConf.getMaxWeightAllowed(),
+            checkArgument(weight >= 1 && weight <= weightConf.getMaxWeightAllowed(),
                     "non-null weights should be in the range [1,maxWeightAllowed(%s)]", weightConf.getMaxWeightAllowed());
         }
         this.retryTopicWeight = weight;
@@ -103,12 +104,18 @@ public class WeightedConsumerBuilder<T> extends ConsumerBuilderImpl<T> {
     }
 
     public WeightedConsumerBuilder<T> topics(Map<String, Integer> topicWeights) {
-        Preconditions.checkArgument(topicWeights != null && topicWeights.size() > 0, "non-empty topic-weight map required");
+        checkArgument(topicWeights != null && topicWeights.size() > 0, "non-empty topic-weight map required");
         for (Map.Entry<String, Integer> entry : topicWeights.entrySet()) {
             topic(entry.getKey(), entry.getValue());
         }
         return this;
     }
+    private String getSubscriptionName(ConsumerConfigurationData conf){
+        String subscriptionName=conf.getSubscriptionName();
+        subscriptionName.replace("/", "__");
+        return subscriptionName;
+    }
+
 
     /**
      * Copied from {@link ConsumerBuilderImpl#subscribeAsync()}
@@ -139,8 +146,9 @@ public class WeightedConsumerBuilder<T> extends ConsumerBuilderImpl<T> {
         }
         if(conf.isRetryEnable() && conf.getTopicNames().size() > 0 ) {
             TopicName topicFirst = TopicName.get(conf.getTopicNames().iterator().next());
-            String retryLetterTopic = topicFirst.getNamespace() + "/" + conf.getSubscriptionName() + RetryMessageUtil.RETRY_GROUP_TOPIC_SUFFIX;
-            String deadLetterTopic = topicFirst.getNamespace() + "/" + conf.getSubscriptionName() + RetryMessageUtil.DLQ_GROUP_TOPIC_SUFFIX;
+            String subscriptionName=getSubscriptionName(conf);
+            String retryLetterTopic = topicFirst.getNamespace() + "/" + subscriptionName + RetryMessageUtil.RETRY_GROUP_TOPIC_SUFFIX;
+            String deadLetterTopic = topicFirst.getNamespace() + "/" + subscriptionName + RetryMessageUtil.DLQ_GROUP_TOPIC_SUFFIX;
             if(conf.getDeadLetterPolicy() == null) {
                 conf.setDeadLetterPolicy(DeadLetterPolicy.builder()
                         .maxRedeliverCount(RetryMessageUtil.MAX_RECONSUMETIMES)
